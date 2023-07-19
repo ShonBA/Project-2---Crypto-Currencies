@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="code.jquery.com_jquery-3.7.0.js"></script>
+    <script src="main.js"></script>
+
+    
+    <title>Crypto Currencies</title>
+</head>
+
+
+<body class="parallax">
+    
+
+    
+        <!-- Nav Bar -->
+        <nav class="navbar navbar-expand-lg bg-body-tertiary fs-3">
+            
+                <a class="navbar-brand" href="javascript:void(0)" id="cryptoLogo"><img src="assets/images/crypto_logo.png" alt="crypto_logo" id="cryptoLogoImg"></a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                    aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="javascript:void(0)" id="currenciesLink">Currencies</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="javascript:void(0)" id="liveReportsLink">Live Reports</a>
+                        </li>
+    
+                        <li class="nav-item">
+                            <a class="nav-link" href="javascript:void(0)" id="aboutMeLink">About Me</a>
+                        </li>
+                    </ul>
+                    <form class="d-flex" role="search">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" id="searchTextBox">
+                    </form>
+                </div>
+        </nav>
+
+    <!-- Modal -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Selected Currencies To live Reports</h1>
+                    <button id="closeModalBtn" type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div id="cardModalContainer" class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="closeModal" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="saveChangesModal" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- Main content Header -->
+    <h1 class="text-center">Crypto Currencies</h1>
+    <div >
+        <div id="mainContent" class="container-fluid text-center ">
+        </div>
+
+    </div>
+</body>
+
+</html>
