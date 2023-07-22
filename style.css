@@ -1,14 +1,11 @@
-body {
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-li{
-  background-color: white;
+li {
+  background-color: transparent;
 }
 
 .cardBox {
   margin: 5px;
+  margin-bottom: 10px;
+  background-color: rgba(255, 255, 255, 0.904);
 }
 
 h1 {
@@ -19,9 +16,10 @@ h1 {
   width: 4rem;
 }
 
-
 .currencyLogoCard {
   margin-left: 3rem;
+  background-color: transparent;
+  
 }
 
 /* The switch - the box around the slider */
@@ -87,22 +85,47 @@ input:checked+.slider:before {
   border-radius: 50%;
 }
 
-body, html {
+body,
+html {
   height: 100%;
 }
 
+  /* Create the parallax scrolling*/
 .parallax {
-  /* The image used */
-  background-image: url("assets/images/back-ground.jpg");
-  /* background-size: cover; */
-
-
-  /* Full height */
+  background-image: url("assets/images/backGround.jpg");
   height: 100%;
-
-  /* Create the parallax scrolling effect */
   background-attachment: fixed;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+}
+
+/* Spinner */
+.spinner {
+  display: none;
+  border: 4px solid rgba(0, 0, 0, 0.3);
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 2s linear infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -15px;
+  margin-left: -15px;
+}
+
+.show {
+  display: block;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }

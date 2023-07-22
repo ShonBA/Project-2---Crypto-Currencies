@@ -5,8 +5,10 @@ $(() => {
 
     // all usage variables and element
     const SelectedCoins = [];
+    const CoinsDataArr = [];
     let SelectedCoin
     const currencies_KEY = "CURRENCIES_KEY"
+    const currencies_data_KEY = "CURRENCIES_DATA_KEY"
     const mainContent = document.getElementById("mainContent");
     const currenciesLink = document.getElementById("currenciesLink");
     const cryptoLogo = document.getElementById("cryptoLogo");
@@ -27,6 +29,26 @@ $(() => {
     saveCurrenciesToSessionStorage();
 
 
+    // =====================================================//
+    //                                                      //
+    //                   Event listeners                    //
+    //                                                      //
+    // =====================================================//
+
+    // On click event listener
+    currenciesLink.addEventListener("click", () => {
+        const currencies = loadCurrenciesToSessionStorage();
+        displayCurrencies(currencies);
+        checkToggleOn()
+    });
+
+    // On click event listener
+    cryptoLogo.addEventListener("click", () => {
+        const currencies = loadCurrenciesToSessionStorage();
+        displayCurrencies(currencies);
+        checkToggleOn()
+    });
+
     // Search bar function
     searchTextBox.addEventListener("keyup", async () => {
         const arr = await loadCurrenciesToSessionStorage();
@@ -41,34 +63,53 @@ $(() => {
         }
     })
 
-
-    // On click event listener
-    currenciesLink.addEventListener("click", () => {
-        const currencies = loadCurrenciesToSessionStorage();
-        displayCurrencies(currencies);
-        checkToggleOn()
-    });
-    // On click event listener
-    cryptoLogo.addEventListener("click", () => {
-        const currencies = loadCurrenciesToSessionStorage();
-        displayCurrencies(currencies);
-        checkToggleOn()
-    });
-
-
-
     // More info event listener
     $("div").on("click", ".moreInfoBtnBox", async function () {
-        const json = await getCurrenciesInfo(this.id);
-        $(`#collapseExample${this.id}`).html(`<b>
-        <br>
-        USD: ${json.market_data.current_price.usd}
-        <br>
-        ERU: ${json.market_data.current_price.eur}
-        <br>
-        NIS: ${json.market_data.current_price.ils}
-        </b>
-        `)
+        event.stopPropagation();
+        if (this.getAttribute("aria-expanded") === "true") {
+            const coinSessionData = await loadCoinDataFromSessionStorage();
+            if (!coinSessionData) {
+                showSpinner(); // Show the spinner before fetching data
+                const json = await getCurrenciesInfo(this.id);
+                const coinData = makeMoreInfoDateArr(json);
+                CoinsDataArr.push(coinData);
+                saveCoinDataToSessionStorage(CoinsDataArr);
+                hideSpinner(); // Hide the spinner after data is loaded
+                displayMoreInfo(coinData);
+            } else {
+                let foundMatchingCoin = false;
+                for (let i = 0; i < coinSessionData.length; i++) {
+                    if (coinSessionData[i].id === this.id) {
+                        if (Date.now() - coinSessionData[i].time <= 10000) {
+                            displayMoreInfo(coinSessionData[i]);
+                            foundMatchingCoin = true;
+                            break;
+                        } else {
+                            showSpinner(); // Show the spinner before fetching data
+                            const json = await getCurrenciesInfo(this.id);
+                            const coinData = makeMoreInfoDateArr(json);
+                            CoinsDataArr.push(coinData);
+                            coinSessionData[i] = coinData;
+                            saveCoinDataToSessionStorage(coinSessionData);
+                            hideSpinner(); // Hide the spinner after data is loaded
+                            displayMoreInfo(coinData);
+                            foundMatchingCoin = true;
+                            break;
+                        }
+                    }
+                }
+                if (!foundMatchingCoin) {
+                    showSpinner(); // Show the spinner before fetching data
+                    const json = await getCurrenciesInfo(this.id);
+                    const coinData = makeMoreInfoDateArr(json);
+                    CoinsDataArr.push(coinData);
+                    coinSessionData.push(coinData);
+                    saveCoinDataToSessionStorage(coinSessionData);
+                    hideSpinner(); // Hide the spinner after data is loaded
+                    displayMoreInfo(coinData);
+                }
+            }
+        }
     });
 
     // live reports page
@@ -83,6 +124,41 @@ $(() => {
     //                   Display Function                   //
     //                                                      //
     // =====================================================//
+
+    // making the json a object and return the object
+    function makeMoreInfoDateArr(coinJson) {
+        const coinInfo = {
+            id: coinJson.id,
+            usd: coinJson.market_data.current_price.usd,
+            eur: coinJson.market_data.current_price.eur,
+            ils: coinJson.market_data.current_price.ils,
+            time: Date.now()
+        }
+        return coinInfo
+    }
+
+    // Display Currencies value
+    function displayMoreInfo(coinInfo) {
+        $(`#collapseExample${coinInfo.id}`).html(`<b>
+        <br>
+        USD: ${coinInfo.usd}$
+        <br>
+        ERU: ${coinInfo.eur}€
+        <br>
+        NIS: ${coinInfo.ils}₪
+        </b>
+        `)
+    }
+
+    // Function to show the spinner
+    function showSpinner() {
+        $(".spinner").addClass("show");
+    }
+
+    // Function to hide the spinner
+    function hideSpinner() {
+        $(".spinner").removeClass("show");
+    }
 
     // Display about me page
     function displayAboutMe() {
@@ -111,39 +187,35 @@ $(() => {
       </div>`;
     }
 
-
-
-    // get the currencies array from other function
+    // get the currencies From API and display
     async function getAndDisplayCurrencies() {
         const currencies = await getCurrencies();
         displayCurrencies(currencies);
     }
 
-
     // accepting currencies array an injecting into HTML
     function displayCurrencies(currencies) {
         let html = ``;
         for (const coin of currencies) {
-
             html += `  
-            <div id="${coin.id}" class="cardBox card d-inline-grid text-center" style="width: 18rem;">
-            <div class="card-body col ">
+            <div id="${coin.id}" class="cardBox card d-inline-grid text-center" style="width: 18rem;" >
+            <div class="card-body col">
                 <label class="switch float-end">
                     <input type="checkbox" class="checkBox" id="${coin.id}">
                     <span class="slider round"></span>
                 </label>
                 <img src="${coin.image}" class="currencyLogoCard" height="40" width="40" alt="${coin.id}">
-                <h5 class="card-title lh-lg mt-1">${coin.name}</h5>
+                <h5 class="card-title lh-lg mt-1" >${coin.name}</h5>
                 <h6 class="card-subtitle mb-2 text-body-secondary lh-lg mt-1">${coin.symbol}</h6>
                 <button id="${coin.id}" class="btn btn-primary moreInfoBtnBox" type="button" data-bs-toggle="collapse"
                     data-bs-target="#collapseExample${coin.id}" aria-expanded="false"
-                    aria-controls="collapseExample">
+                    aria-controls="collapseExample" >
                     More info
                 </button>
-        
-                <div class="collapseContainer">
+                <div class="collapseContainer" >
                     <div class="collapse" id="collapseExample${coin.id}">
-                        <div class="collapseData card card-body border-0">
+                    <div class="collapseData card card-body border-0">
+                    <div class="spinner"></div>
 
                         </div>
                     </div>
@@ -152,7 +224,6 @@ $(() => {
             </div>
         </div>`
             mainContent.innerHTML = html;
-
         }
 
         // Checking for selected coins and modal display
@@ -186,7 +257,6 @@ $(() => {
                 }
             })
         }
-
 
         // Close modal button, canceling the 6 coin and un toggle at main
         closeModal.addEventListener("click", function () {
@@ -238,14 +308,11 @@ $(() => {
                 for (const check of checkBoxArr) {
                     if (coin == check.id) {
                         check.checked = true;
-                    }
+                    } 
                 }
             }
-
         }
     }
-
-
 
     // =====================================================//
     //                                                      //
@@ -253,6 +320,19 @@ $(() => {
     //                                                      //
     // =====================================================//
 
+
+    // save currencies data to session storage
+    async function saveCoinDataToSessionStorage(coinData) {
+        const json = JSON.stringify(coinData);
+        sessionStorage.setItem(currencies_data_KEY, json);
+    }
+
+    // load currencies data from storage return parse
+    function loadCoinDataFromSessionStorage() {
+        const json = sessionStorage.getItem(currencies_data_KEY);
+        const coinData = JSON.parse(json);
+        return coinData;
+    }
 
     // save currencies as json string to  session storage
     async function saveCurrenciesToSessionStorage() {
@@ -281,6 +361,7 @@ $(() => {
         return json
     }
 
+    // AJAX - get currencies data from API
     async function getCurrenciesInfo(currency) {
         const response = await fetch(`https://api.coingecko.com/api/v3/coins/${currency}`);
         const json = await response.json();
