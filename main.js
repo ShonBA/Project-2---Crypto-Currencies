@@ -53,7 +53,7 @@ $(() => {
     searchTextBox.addEventListener("keyup", async () => {
         const arr = await loadCurrenciesToSessionStorage();
         const search = searchTextBox.value;
-        const searchArr = arr.filter(item => item.name.toLowerCase().indexOf(search) > -1 || item.symbol.indexOf(search) > -1);
+        const searchArr = arr.filter(item => item.name.indexOf(search) > -1 || item.name.toLowerCase().indexOf(search) > -1 || item.name.toUpperCase().indexOf(search) > -1 || item.symbol.indexOf(search) > -1 || item.symbol.toUpperCase().indexOf(search) > -1);
         if (searchArr.length === 0) {
             mainContent.innerHTML = "Coin not found";
         } else if (search) {
@@ -64,53 +64,61 @@ $(() => {
     })
 
     // More info event listener
-    $("div").on("click", ".moreInfoBtnBox", async function () {
-        event.stopPropagation();
-        if (this.getAttribute("aria-expanded") === "true") {
-            const coinSessionData = await loadCoinDataFromSessionStorage();
-            if (!coinSessionData) {
-                showSpinner(); // Show the spinner before fetching data
-                const json = await getCurrenciesInfo(this.id);
-                const coinData = makeMoreInfoDateArr(json);
-                CoinsDataArr.push(coinData);
-                saveCoinDataToSessionStorage(CoinsDataArr);
-                hideSpinner(); // Hide the spinner after data is loaded
-                displayMoreInfo(coinData);
-            } else {
-                let foundMatchingCoin = false;
-                for (let i = 0; i < coinSessionData.length; i++) {
-                    if (coinSessionData[i].id === this.id) {
-                        if (Date.now() - coinSessionData[i].time <= 10000) {
-                            displayMoreInfo(coinSessionData[i]);
-                            foundMatchingCoin = true;
-                            break;
-                        } else {
-                            showSpinner(); // Show the spinner before fetching data
+    $("div").on("click", ".moreInfoBtnBox", function () {
+        return new Promise(async (resolve, reject) => {
+            try {
+                event.stopPropagation();
+                if (this.getAttribute("aria-expanded") === "true") {
+                    const coinSessionData = await loadCoinDataFromSessionStorage();
+                    if (!coinSessionData) {
+                        showSpinner();
+                        const json = await getCurrenciesInfo(this.id);
+                        const coinData = makeMoreInfoDateArr(json);
+                        CoinsDataArr.push(coinData);
+                        saveCoinDataToSessionStorage(CoinsDataArr);
+                        hideSpinner();
+                        displayMoreInfo(coinData);
+                    } else {
+                        let foundMatchingCoin = false;
+                        for (let i = 0; i < coinSessionData.length; i++) {
+                            if (coinSessionData[i].id === this.id) {
+                                if (Date.now() - coinSessionData[i].time <= 120000) {
+                                    displayMoreInfo(coinSessionData[i]);
+                                    foundMatchingCoin = true;
+                                    break;
+                                } else {
+                                    showSpinner();
+                                    const json = await getCurrenciesInfo(this.id);
+                                    const coinData = makeMoreInfoDateArr(json);
+                                    CoinsDataArr.push(coinData);
+                                    coinSessionData[i] = coinData;
+                                    saveCoinDataToSessionStorage(coinSessionData);
+                                    hideSpinner();
+                                    displayMoreInfo(coinData);
+                                    foundMatchingCoin = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!foundMatchingCoin) {
+                            showSpinner();
                             const json = await getCurrenciesInfo(this.id);
                             const coinData = makeMoreInfoDateArr(json);
                             CoinsDataArr.push(coinData);
-                            coinSessionData[i] = coinData;
+                            coinSessionData.push(coinData);
                             saveCoinDataToSessionStorage(coinSessionData);
-                            hideSpinner(); // Hide the spinner after data is loaded
+                            hideSpinner();
                             displayMoreInfo(coinData);
-                            foundMatchingCoin = true;
-                            break;
                         }
                     }
                 }
-                if (!foundMatchingCoin) {
-                    showSpinner(); // Show the spinner before fetching data
-                    const json = await getCurrenciesInfo(this.id);
-                    const coinData = makeMoreInfoDateArr(json);
-                    CoinsDataArr.push(coinData);
-                    coinSessionData.push(coinData);
-                    saveCoinDataToSessionStorage(coinSessionData);
-                    hideSpinner(); // Hide the spinner after data is loaded
-                    displayMoreInfo(coinData);
-                }
+                resolve();
+            } catch (error) {
+                reject(error);
             }
-        }
+        });
     });
+
 
     // live reports page
     liveReportsLink.addEventListener("click", displayLiveReports);
@@ -188,10 +196,18 @@ $(() => {
     }
 
     // get the currencies From API and display
-    async function getAndDisplayCurrencies() {
-        const currencies = await getCurrencies();
-        displayCurrencies(currencies);
+    function getAndDisplayCurrencies() {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const currencies = await getCurrencies(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+                displayCurrencies(currencies);
+                resolve(currencies);
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
+
 
     // accepting currencies array an injecting into HTML
     function displayCurrencies(currencies) {
@@ -281,22 +297,25 @@ $(() => {
         })
 
         // check for disabled coins and splice them from array
+
         saveChangesModal.addEventListener("click", function () {
             let removeCoinId = '';
-            for (const checkModal of checkBoxModal) {
-                if (checkModal.checked === false) {
-                    removeCoinId = checkModal.id;
-                    removeCoinId = removeCoinId.slice(0, removeCoinId.length - 5);
-                    const removeIndexChange = SelectedCoins.findIndex(item => item === removeCoinId);
-                    SelectedCoins.splice(removeIndexChange, 1);
-                    exampleModal.hide();
+            if (SelectedCoins.length === 6) {
+                for (const checkModal of checkBoxModal) {
+                    if (checkModal.checked === false) {
+                        removeCoinId = checkModal.id;
+                        removeCoinId = removeCoinId.slice(0, removeCoinId.length - 5);
+                        const removeIndexChange = SelectedCoins.findIndex(item => item === removeCoinId);
+                        SelectedCoins.splice(removeIndexChange, 1);
+                        console.log(SelectedCoins)
+                    }
                 }
-            }
-            for (const check of checkBoxArr) {
-                if (check.id == removeCoinId) {
-                    check.checked = false;
-                    exampleModal.hide();
+                for (const check of checkBoxArr) {
+                    if (check.id == removeCoinId) {
+                        check.checked = false;
+                    }
                 }
+                exampleModal.hide();
             }
         })
     }
@@ -308,7 +327,7 @@ $(() => {
                 for (const check of checkBoxArr) {
                     if (coin == check.id) {
                         check.checked = true;
-                    } 
+                    }
                 }
             }
         }
@@ -335,11 +354,19 @@ $(() => {
     }
 
     // save currencies as json string to  session storage
-    async function saveCurrenciesToSessionStorage() {
-        const currencies = await getCurrencies();
-        const json = JSON.stringify(currencies);
-        sessionStorage.setItem(currencies_KEY, json)
+    function saveCurrenciesToSessionStorage() {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const currencies = await getCurrencies(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+                const json = JSON.stringify(currencies);
+                sessionStorage.setItem(currencies_KEY, json);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
+
 
     // load currencies from session storage return parse
     function loadCurrenciesToSessionStorage() {
@@ -355,40 +382,34 @@ $(() => {
     // =====================================================//
 
     // AJAX - get currencies from API
-    async function getCurrencies() {
-        const response = await fetch('crypto.json');
-        const json = await response.json();
-        return json
+    async function getCurrencies(url) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(url);
+                const json = await response.json();
+                resolve(json);
+            }
+            catch (error) {
+                reject(error);
+            }
+        })
     }
 
     // AJAX - get currencies data from API
-    async function getCurrenciesInfo(currency) {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${currency}`);
-        const json = await response.json();
-        return json;
+    function getCurrenciesInfo(currency) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(`https://api.coingecko.com/api/v3/coins/${currency}`);
+                const json = await response.json();
+                resolve(json);
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     function displayLiveReports() {
         mainContent.innerHTML = `<h1>Live Reports...</h1>`;
     }
-
 
 });
