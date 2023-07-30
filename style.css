@@ -19,7 +19,7 @@ h1 {
 .currencyLogoCard {
   margin-left: 3rem;
   background-color: transparent;
-  
+
 }
 
 /* The switch - the box around the slider */
@@ -90,7 +90,7 @@ html {
   height: 100%;
 }
 
-  /* Create the parallax scrolling*/
+/* Create the parallax scrolling*/
 .parallax {
   background-image: url("assets/images/backGround.jpg");
   height: 100%;

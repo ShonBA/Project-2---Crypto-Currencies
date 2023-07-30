@@ -3,10 +3,16 @@
 // JQuery - document ready
 $(() => {
 
-    // all usage variables and element
-    const SelectedCoins = [];
-    const CoinsDataArr = [];
-    let SelectedCoin
+
+    // =====================================================//
+    //                                                      //
+    //              Variables and elements                  //
+    //                                                      //
+    // =====================================================//
+
+    const selectedCoins = [];
+    const coinsDataArr = [];
+    let SelectedCoin = {};
     const currencies_KEY = "CURRENCIES_KEY"
     const currencies_data_KEY = "CURRENCIES_DATA_KEY"
     const mainContent = document.getElementById("mainContent");
@@ -24,9 +30,19 @@ $(() => {
     const exampleModal = new bootstrap.Modal("#staticBackdrop");
 
 
-    // Starting Function Invoke
-    getAndDisplayCurrencies();
-    saveCurrenciesToSessionStorage();
+    // =====================================================//
+    //                                                      //
+    //                  Starting Functions                  //
+    //                                                      //
+    // =====================================================//
+
+    getAndDisplayCurrencies().catch((error) => {
+        console.log("failed while fetching currencies in display currencies function :", error);
+    });
+    saveCurrenciesToSessionStorage().catch((error) => {
+        console.log("Error while fetching to save currencies to session storage:", error);
+    });
+
 
 
     // =====================================================//
@@ -37,25 +53,44 @@ $(() => {
 
     // On click event listener
     currenciesLink.addEventListener("click", () => {
-        const currencies = loadCurrenciesToSessionStorage();
+        const currencies = loadCurrenciesFromSessionStorage();
         displayCurrencies(currencies);
         checkToggleOn()
+        stopDataUpdates()
     });
 
     // On click event listener
     cryptoLogo.addEventListener("click", () => {
-        const currencies = loadCurrenciesToSessionStorage();
+        const currencies = loadCurrenciesFromSessionStorage();
         displayCurrencies(currencies);
         checkToggleOn()
+        stopDataUpdates()
+
+    });
+
+    // live reports page
+    liveReportsLink.addEventListener("click", () => {
+        if (selectedCoins.length === 0) {
+            mainContent.innerHTML = `<h1>Please Select 1 - 5 Currencies</h1>`
+        } else {
+            displayLiveReports()
+        }
+    });
+
+    // about me page
+    aboutMeLink.addEventListener("click", () => {
+        displayAboutMe()
+        stopDataUpdates()
+
     });
 
     // Search bar function
-    searchTextBox.addEventListener("keyup", async () => {
-        const arr = await loadCurrenciesToSessionStorage();
+    searchTextBox.addEventListener("input", () => {
+        const arr = loadCurrenciesFromSessionStorage();
         const search = searchTextBox.value;
         const searchArr = arr.filter(item => item.name.indexOf(search) > -1 || item.name.toLowerCase().indexOf(search) > -1 || item.name.toUpperCase().indexOf(search) > -1 || item.symbol.indexOf(search) > -1 || item.symbol.toUpperCase().indexOf(search) > -1);
         if (searchArr.length === 0) {
-            mainContent.innerHTML = "Coin not found";
+            mainContent.innerHTML = `<h1>Coin not found...<h1>`;
         } else if (search) {
             displayCurrencies(searchArr);
         } else {
@@ -74,8 +109,8 @@ $(() => {
                         showSpinner();
                         const json = await getCurrenciesInfo(this.id);
                         const coinData = makeMoreInfoDateArr(json);
-                        CoinsDataArr.push(coinData);
-                        saveCoinDataToSessionStorage(CoinsDataArr);
+                        coinsDataArr.push(coinData);
+                        saveCoinDataToSessionStorage(coinsDataArr);
                         hideSpinner();
                         displayMoreInfo(coinData);
                     } else {
@@ -90,7 +125,7 @@ $(() => {
                                     showSpinner();
                                     const json = await getCurrenciesInfo(this.id);
                                     const coinData = makeMoreInfoDateArr(json);
-                                    CoinsDataArr.push(coinData);
+                                    coinsDataArr.push(coinData);
                                     coinSessionData[i] = coinData;
                                     saveCoinDataToSessionStorage(coinSessionData);
                                     hideSpinner();
@@ -104,7 +139,7 @@ $(() => {
                             showSpinner();
                             const json = await getCurrenciesInfo(this.id);
                             const coinData = makeMoreInfoDateArr(json);
-                            CoinsDataArr.push(coinData);
+                            coinsDataArr.push(coinData);
                             coinSessionData.push(coinData);
                             saveCoinDataToSessionStorage(coinSessionData);
                             hideSpinner();
@@ -116,15 +151,11 @@ $(() => {
             } catch (error) {
                 reject(error);
             }
+        }).catch((error) => {
+            console.log("Error while fetching more coin info", error);
         });
     });
 
-
-    // live reports page
-    liveReportsLink.addEventListener("click", displayLiveReports);
-
-    // about me page
-    aboutMeLink.addEventListener("click", displayAboutMe);
 
 
     // =====================================================//
@@ -168,6 +199,19 @@ $(() => {
         $(".spinner").removeClass("show");
     }
 
+    // get the currencies From API and display
+    function getAndDisplayCurrencies() {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const currencies = await getCurrencies(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+                displayCurrencies(currencies);
+                resolve(currencies);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
     // Display about me page
     function displayAboutMe() {
         mainContent.innerHTML = `
@@ -194,20 +238,6 @@ $(() => {
         </div>
       </div>`;
     }
-
-    // get the currencies From API and display
-    function getAndDisplayCurrencies() {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const currencies = await getCurrencies(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
-                displayCurrencies(currencies);
-                resolve(currencies);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
 
     // accepting currencies array an injecting into HTML
     function displayCurrencies(currencies) {
@@ -247,23 +277,23 @@ $(() => {
             check.addEventListener("click", function () {
                 if (check.checked === true) {
                     SelectedCoin = check.id;
-                    SelectedCoins.push(SelectedCoin);
+                    selectedCoins.push(SelectedCoin);
                     check.checked;
                 }
                 if (check.checked === false) {
-                    const unCheckIndex = SelectedCoins.findIndex(item => item === check.id);
-                    SelectedCoins.splice(unCheckIndex, 1);
+                    const unCheckIndex = selectedCoins.findIndex(item => item === check.id);
+                    selectedCoins.splice(unCheckIndex, 1);
                 }
-                if (SelectedCoins.length > 5) {
+                if (selectedCoins.length > 5) {
                     exampleModal.show()
                     let html = `<p>You can only Select 5 Currencies, Please choose one to Add ${check.id}, Or cancel</p>`
-                    for (let i = 0; i < SelectedCoins.length - 1; i++) {
+                    for (let i = 0; i < selectedCoins.length - 1; i++) {
                         html += `
-                        <div class="card" id="${SelectedCoins[i]}" style="width: 18rem;">
+                        <div class="card" id="${selectedCoins[i]}" style="width: 18rem;">
                         <div class="card-body">
-                          <h5 class="card-title">${SelectedCoins[i]}</h5>
+                          <h5 class="card-title">${selectedCoins[i]}</h5>
                           <label class="switch float-end">
-                          <input type="checkbox" checked class="checkBoxModal" id="${SelectedCoins[i]}Modal">
+                          <input type="checkbox" checked class="checkBoxModal" id="${selectedCoins[i]}Modal">
                           <span class="slider round"></span>
                       </label>                        </div>
                       </div>
@@ -276,54 +306,59 @@ $(() => {
 
         // Close modal button, canceling the 6 coin and un toggle at main
         closeModal.addEventListener("click", function () {
-            const removeId = SelectedCoins[5];
+            const removeId = selectedCoins[5];
             for (const check of checkBoxArr) {
                 if (check.id == removeId) {
                     check.checked = false
                 }
             }
-            SelectedCoins.pop()
+            selectedCoins.pop()
         })
 
         // Close modal button, canceling the 6 coin and un toggle at main
         closeModalBtn.addEventListener("click", function () {
-            const removeId = SelectedCoins[5];
+            const removeId = selectedCoins[5];
             for (const check of checkBoxArr) {
                 if (check.id == removeId) {
                     check.checked = false
                 }
             }
-            SelectedCoins.pop()
+            selectedCoins.pop()
         })
 
-        // check for disabled coins and splice them from array
-
+        // check for disabled coin restricting one
         saveChangesModal.addEventListener("click", function () {
+            let disabledInputCount = 0;
             let removeCoinId = '';
-            if (SelectedCoins.length === 6) {
-                for (const checkModal of checkBoxModal) {
-                    if (checkModal.checked === false) {
-                        removeCoinId = checkModal.id;
-                        removeCoinId = removeCoinId.slice(0, removeCoinId.length - 5);
-                        const removeIndexChange = SelectedCoins.findIndex(item => item === removeCoinId);
-                        SelectedCoins.splice(removeIndexChange, 1);
-                        console.log(SelectedCoins)
-                    }
+
+            // Count the number of disabled inputs
+            for (const checkModal of checkBoxModal) {
+                if (checkModal.checked === false) {
+                    disabledInputCount++;
+                    removeCoinId = checkModal.id.slice(0, -5);
                 }
-                for (const check of checkBoxArr) {
-                    if (check.id == removeCoinId) {
-                        check.checked = false;
-                    }
-                }
-                exampleModal.hide();
             }
-        })
+
+            if (disabledInputCount !== 1) {
+                return;
+            }
+
+            const removeIndexChange = selectedCoins.findIndex(item => item === removeCoinId);
+            selectedCoins.splice(removeIndexChange, 1);
+
+            for (const check of checkBoxArr) {
+                if (check.id === removeCoinId) {
+                    check.checked = false;
+                }
+            }
+            exampleModal.hide();
+        });
     }
 
     // toggle on the selected coin when moving to different "pages"
     function checkToggleOn() {
-        if (SelectedCoins.length > 0) {
-            for (const coin of SelectedCoins) {
+        if (selectedCoins.length > 0) {
+            for (const coin of selectedCoins) {
                 for (const check of checkBoxArr) {
                     if (coin == check.id) {
                         check.checked = true;
@@ -367,9 +402,8 @@ $(() => {
         });
     }
 
-
     // load currencies from session storage return parse
-    function loadCurrenciesToSessionStorage() {
+    function loadCurrenciesFromSessionStorage() {
         const json = sessionStorage.getItem(currencies_KEY);
         const currencies = JSON.parse(json);
         return currencies;
@@ -381,21 +415,22 @@ $(() => {
     //                                                      //
     // =====================================================//
 
-    // AJAX - get currencies from API
+    // get currencies from API
     async function getCurrencies(url) {
         return new Promise(async (resolve, reject) => {
             try {
-                const response = await fetch(url);
-                const json = await response.json();
+                const response = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+                const json = response.json();
                 resolve(json);
-            }
-            catch (error) {
+            } catch (error) {
                 reject(error);
             }
-        })
+        }).catch((error) => {
+            console.log("Error while fetching currencies from API:", error);
+        });
     }
 
-    // AJAX - get currencies data from API
+    // get currencies data from API
     function getCurrenciesInfo(currency) {
         return new Promise(async (resolve, reject) => {
             try {
@@ -405,11 +440,169 @@ $(() => {
             } catch (error) {
                 reject(error);
             }
+        }).catch((error) => {
+            console.log("Error while fetching currencies info from API:", error);
         });
     }
 
-    function displayLiveReports() {
-        mainContent.innerHTML = `<h1>Live Reports...</h1>`;
+    function getCurrenciesLiveInfo(liveFetchString) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${liveFetchString}&tsyms=USD`);
+                const json = await response.json();
+                resolve(json);
+            } catch (error) {
+                reject(error);
+            }
+        }).catch((error) => {
+            console.log("Error while fetching currencies info from API:", error);
+        });
     }
 
+
+    // =====================================================//
+    //                                                      //
+    //                Live Report Functions                 //
+    //                                                      //
+    // =====================================================//
+
+
+    // Getting coins symbol to fetch 
+    function getLiveReportsCurrenciesInfo(currencies) {
+        const resultArray = [];
+        for (const coin of selectedCoins) {
+            const currencyInfo = currencies.find((currency) => currency.id === coin);
+            if (currencyInfo) {
+                resultArray.push(currencyInfo);
+            }
+        }
+
+        return resultArray;
+    }
+
+    // Getting fetch string (btc,eth...)
+    function getLiveFetchString(resultArray) {
+        let liveFetchString = "";
+        for (const coin of resultArray) {
+            liveFetchString += coin.symbol + ",";
+        }
+        return liveFetchString
+    }
+
+    // making the fetch data iterable
+    async function getIterableArrLive() {
+        const currencies = loadCurrenciesFromSessionStorage();
+        console.log(currencies)
+        const reportsInfo = getLiveReportsCurrenciesInfo(currencies)
+        console.log(reportsInfo)
+        const liveStr = getLiveFetchString(reportsInfo);
+        console.log(liveStr)
+        const fetchLiveInfo = await getCurrenciesLiveInfo(liveStr);
+        const liveDataArray = Object.keys(fetchLiveInfo).map(currency => ({
+            currency,
+            usd: fetchLiveInfo[currency].USD
+        }));
+        return liveDataArray
+    }
+
+    //declare option to make changes
+    let options = {
+        exportEnabled: true,
+        animationEnabled: true,
+        title: {
+            text: "Selected Crypto's Live Reports",
+        },
+        axisX: {
+            title: "Date",
+        },
+        axisY: {
+            title: "Currencies Value USD",
+            titleFontColor: "#4F81BC",
+            lineColor: "#4F81BC",
+            labelFontColor: "#4F81BC",
+            tickColor: "#4F81BC",
+        },
+        toolTip: {
+            shared: true,
+        },
+        legend: {
+            cursor: "pointer",
+        },
+        data: [],
+    };
+
+    // updating data points
+    function addDataPoints(liveDataArray) {
+        const currentDate = new Date();
+        for (const coin of liveDataArray) {
+            const dataSeries = options.data.find((series) => series.name === `${coin.currency} Value`);
+            if (dataSeries) {
+                // Check if dataPoints array exists, if not create it
+                if (!dataSeries.dataPoints) {
+                    dataSeries.dataPoints = [];
+                }
+                dataSeries.dataPoints.push({ x: currentDate, y: coin.usd });
+            } else {
+                options.data.push({
+                    type: "spline",
+                    name: `${coin.currency} Value`,
+                    showInLegend: true,
+                    xValueFormatString: "MMM YYYY",
+                    yValueFormatString: "#,##0 Units",
+                    dataPoints: [{ x: currentDate, y: coin.usd }],
+                });
+            }
+        }
+    }
+
+    // printing the live reports functions
+    function liveReports(liveDataArray) {
+        addDataPoints(liveDataArray);
+        $("#mainContent").CanvasJSChart(options);
+    }
+
+    // fetching updated data and render on charts 
+    let dataUpdateInterval;
+    async function displayLiveReports() {
+        const liveDataArray = await getIterableArrLive();
+        console.log(liveDataArray);
+        liveReports(liveDataArray);
+
+        // Update the data points every 2 seconds
+        dataUpdateInterval = setInterval(async () => {
+            const updatedLiveDataArray = await getIterableArrLive();
+            console.log(updatedLiveDataArray);
+            addDataPoints(updatedLiveDataArray);
+            $("#mainContent").CanvasJSChart().render();
+        }, 2000);
+    }
+
+    // reset options to start new  
+    function stopDataUpdates() {
+        clearInterval(dataUpdateInterval);
+        options = {
+            exportEnabled: true,
+            animationEnabled: true,
+            title: {
+                text: "Selected Crypto's Live Reports",
+            },
+            axisX: {
+                title: "Date",
+            },
+            axisY: {
+                title: "Currencies Value USD",
+                titleFontColor: "#4F81BC",
+                lineColor: "#4F81BC",
+                labelFontColor: "#4F81BC",
+                tickColor: "#4F81BC",
+            },
+            toolTip: {
+                shared: true,
+            },
+            legend: {
+                cursor: "pointer",
+            },
+            data: [],
+        };
+    }
 });
