@@ -22,7 +22,6 @@ $(() => {
     const searchTextBox = document.getElementById("searchTextBox");
     const closeModal = document.getElementById("closeModal");
     const closeModalBtn = document.getElementById("closeModalBtn");
-    const saveChangesModal = document.getElementById("saveChangesModal");
     const checkBoxArr = document.getElementsByClassName("checkBox");
     const checkBoxModal = document.getElementsByClassName("checkBoxModal");
     const exampleModal = new bootstrap.Modal("#staticBackdrop");
@@ -37,7 +36,7 @@ $(() => {
         getAndDisplayCurrencies();
         saveCurrenciesToSessionStorage();
     } catch (err) {
-        console.log(`Error occurred while invoking starting function - ${err}`);
+        console.log(`Error occurred while invoking starting function`);
     }
 
 
@@ -100,7 +99,7 @@ $(() => {
                 const coinSessionData = await loadCoinDataFromSessionStorage();
                 if (!coinSessionData) {
                     showSpinner();
-                    const json = await getCurrenciesInfo(this.id);
+                    const json = await getJson(`https://api.coingecko.com/api/v3/coins/${this.id}`);
                     const coinData = makeMoreInfoDateArr(json);
                     coinsDataArr.push(coinData);
                     saveCoinDataToSessionStorage(coinsDataArr);
@@ -116,7 +115,7 @@ $(() => {
                                 break;
                             } else {
                                 showSpinner();
-                                const json = await getCurrenciesInfo(this.id);
+                                const json = await getJson(`https://api.coingecko.com/api/v3/coins/${this.id}`);
                                 const coinData = makeMoreInfoDateArr(json);
                                 coinsDataArr.push(coinData);
                                 coinSessionData[i] = coinData;
@@ -130,7 +129,7 @@ $(() => {
                     }
                     if (!foundMatchingCoin) {
                         showSpinner();
-                        const json = await getCurrenciesInfo(this.id);
+                        const json = await getJson(`https://api.coingecko.com/api/v3/coins/${this.id}`);
                         const coinData = makeMoreInfoDateArr(json);
                         coinsDataArr.push(coinData);
                         coinSessionData.push(coinData);
@@ -188,8 +187,12 @@ $(() => {
 
     // get the currencies From API and display
     async function getAndDisplayCurrencies() {
-        const currencies = await getCurrencies(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
-        displayCurrencies(currencies);
+        try{
+            const currencies = await getJson(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+            displayCurrencies(currencies);
+        }catch(err){
+            console.log(`Error occurred on getAndDisplayCurrencies Function`)
+        }
     }
 
     // Display about me page
@@ -302,9 +305,29 @@ $(() => {
                         `
                     }
                     cardModalContainer.innerHTML = html;
+
+                    // input checkbox even listener close modal and splice from array
+                    for (const checkModal of checkBoxModal) {
+                        checkModal.addEventListener("click", function () {
+                            let removeCoinId = '';
+                            if (checkModal.checked === false) {
+                                removeCoinId = checkModal.id.slice(0, -5);
+                                const removeIndexChange = selectedCoins.findIndex(item => item === removeCoinId);
+                                selectedCoins.splice(removeIndexChange, 1);
+                                exampleModal.hide();
+                                console.log(selectedCoins)
+                            }
+                            for (const check of checkBoxArr) {
+                                if (check.id === removeCoinId) {
+                                    check.checked = false;
+                                }
+                            }
+                        })
+                    }
                 }
             })
         }
+
 
         // Close modal button, canceling the 6 coin and un toggle at main
         closeModal.addEventListener("click", function () {
@@ -327,30 +350,6 @@ $(() => {
             }
             selectedCoins.pop();
         })
-
-        // check for disabled coin restricting one
-        saveChangesModal.addEventListener("click", function () {
-            let disabledInputCount = 0;
-            let removeCoinId = '';
-            for (const checkModal of checkBoxModal) {
-                if (checkModal.checked === false) {
-                    disabledInputCount++;
-                    removeCoinId = checkModal.id.slice(0, -5);
-                }
-            }
-            if (disabledInputCount === 1) {
-                const removeIndexChange = selectedCoins.findIndex(item => item === removeCoinId);
-                selectedCoins.splice(removeIndexChange, 1);
-                for (const check of checkBoxArr) {
-                    if (check.id === removeCoinId) {
-                        check.checked = false;
-                    }
-                }
-                exampleModal.hide();
-            } else {
-                return;
-            }
-        });
     }
 
     // toggle on the selected coin when moving to different "pages"
@@ -388,9 +387,13 @@ $(() => {
 
     // save currencies as json string to  session storage
     async function saveCurrenciesToSessionStorage() {
-        const currencies = await getCurrencies(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
-        const json = JSON.stringify(currencies);
-        sessionStorage.setItem(currencies_KEY, json);
+        try{
+            const currencies = await getJson(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+            const json = JSON.stringify(currencies);
+            sessionStorage.setItem(currencies_KEY, json);
+        }catch(err){
+            console.log(`Error occurred on saveCurrenciesToSessionStorage Function`)
+        }
     }
 
     // load currencies from session storage return parse
@@ -407,26 +410,11 @@ $(() => {
     // =====================================================//
 
     // get currencies from API
-    async function getCurrencies(url) {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1`);
+    async function getJson(url) {
+        const response = await fetch(url);
         const json = response.json();
         return json;
     }
-
-    // get currencies data from API
-    async function getCurrenciesInfo(currency) {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${currency}`);
-        const json = response.json();
-        return json
-
-    }
-
-    async function getCurrenciesLiveInfo(liveFetchString) {
-        const response = await fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${liveFetchString}&tsyms=USD`);
-        const json = response.json();
-        return json;
-    }
-
 
     // =====================================================//
     //                                                      //
@@ -465,7 +453,7 @@ $(() => {
             console.log(reportsInfo)
             const liveStr = getLiveFetchString(reportsInfo);
             console.log(liveStr)
-            const fetchLiveInfo = await getCurrenciesLiveInfo(liveStr);
+            const fetchLiveInfo = await getJson(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${liveStr}&tsyms=USD`);
             const liveDataArray = Object.keys(fetchLiveInfo).map(currency => ({
                 currency,
                 usd: fetchLiveInfo[currency].USD
