@@ -258,7 +258,7 @@ $(() => {
                 </label>
                 <img src="${coin.image}" class="currencyLogoCard" height="40" width="40" alt="${coin.id}">
                 <h5 class="card-title lh-lg mt-1" >${coin.name}</h5>
-                <h6 class="card-subtitle mb-2 text-body-secondary lh-lg mt-1">${coin.symbol}</h6>
+                <h6 class="card-subtitle mb-2 lh-lg mt-1">${coin.symbol}</h6>
                 <button id="${coin.id}" class="btn btn-primary moreInfoBtnBox" type="button" data-bs-toggle="collapse"
                     data-bs-target="#collapseExample${coin.id}" aria-expanded="false"
                     aria-controls="collapseExample" >

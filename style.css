@@ -129,7 +129,7 @@ html {
 }
 
 body {
-  /* font-family: 'Helvetica', Arial, sans-serif; */
+  font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
   margin: 0;
   padding: 0;
 }
@@ -155,7 +155,6 @@ body {
   height: 250px;
   border-radius: 50%;
   object-fit: cover;
-  margin: -50px auto 20px;
   display: block;
   border: 5px solid #fff;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -192,7 +191,6 @@ body {
   color: #666;
 }
 
-/* Additional CSS rules for the custom card */
 .my-custom-card {
   background-color: #f0f0f0;
   border: 2px solid #ccc;
