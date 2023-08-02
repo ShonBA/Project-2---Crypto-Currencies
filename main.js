@@ -140,6 +140,8 @@ $(() => {
                 }
             } catch (err) {
                 console.log(`Error occurred while fetching more info, event listener ${err}`);
+            }finally{
+                hideSpinner();
             }
         }
     });
@@ -350,6 +352,7 @@ $(() => {
             }
             selectedCoins.pop();
         })
+        checkToggleOn();
     }
 
     // toggle on the selected coin when moving to different "pages"
@@ -405,7 +408,7 @@ $(() => {
 
     // =====================================================//
     //                                                      //
-    //                        AJAX                          //
+    //                        Fetch                         //
     //                                                      //
     // =====================================================//
 
