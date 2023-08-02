@@ -317,7 +317,6 @@ $(() => {
                                 const removeIndexChange = selectedCoins.findIndex(item => item === removeCoinId);
                                 selectedCoins.splice(removeIndexChange, 1);
                                 exampleModal.hide();
-                                console.log(selectedCoins)
                             }
                             for (const check of checkBoxArr) {
                                 if (check.id === removeCoinId) {
@@ -451,11 +450,8 @@ $(() => {
     async function getIterableArrLive() {
         try {
             const currencies = loadCurrenciesFromSessionStorage();
-            console.log(currencies)
             const reportsInfo = getLiveReportsCurrenciesInfo(currencies)
-            console.log(reportsInfo)
             const liveStr = getLiveFetchString(reportsInfo);
-            console.log(liveStr)
             const fetchLiveInfo = await getJson(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${liveStr}&tsyms=USD`);
             const liveDataArray = Object.keys(fetchLiveInfo).map(currency => ({
                 currency,
@@ -532,7 +528,6 @@ $(() => {
             liveReports(liveDataArray);
             dataUpdateInterval = setInterval(async () => {
                 const updatedLiveDataArray = await getIterableArrLive();
-                console.log(updatedLiveDataArray);
                 addDataPoints(updatedLiveDataArray);
                 $("#mainContent").CanvasJSChart().render();
             }, 2000);
