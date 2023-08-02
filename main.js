@@ -206,7 +206,7 @@ $(() => {
           <div class="row g-0">
             <div class="col-md-4">
               <div class="profile-picture">
-                <img src="assets/images/About-Me.jpg" class="img-fluid rounded-circle" alt="shon_pic">
+                <img src="assets/images/AboutMe.jpg" class="img-fluid rounded-circle" alt="shon_pic">
               </div>
               <div class="social-icons">
                 <a href="https://www.linkedin.com/in/shonbenayoun/" target="_blank">
